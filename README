@@ -1,13 +1,13 @@
 DISTS	Copyright (c) 2012, Mehmet Ali Yatbaz, Enis Sert, Deniz Yuret
 
 Usage: dists [options] < input-stream
-	-h 				 Display this information
-	-d <distance-type>		 Set <distance-type> 0 for Euclid, 1 for Cosine(default Cosine)
-	-u <upper-bound>		 Calculate 1000NN of the rows up to the <upper-bound>(default number of rows)
-	-l <lower-bound>		 Calculate 1000NN of the rows starting from <lower-bound>(default 0)
-	-p <arg>			 Run <arg> parallel jobs to calculate kNN(default 1)
-	-k <arg>			 Calculate <arg>NN of the data(default 1000)
-	-v 				 Verbose
+       -h		   Display this information
+       -d <distance-type>  Set <distance-type> 0 for Euclid, 1 for Cosine(default Cosine)
+       -u <upper-bound>	   Calculate 1000NN of the rows up to the <upper-bound>(default number of rows)
+       -l <lower-bound>	   Calculate 1000NN of the rows starting from <lower-bound>(default 0)
+       -p <arg>		   Run <arg> parallel jobs to calculate kNN(default 1)
+       -k <arg>		   Calculate <arg>NN of the data(default 1000)
+       -v 		   Verbose
 input-stream format
 <n:number of elements in the row> <c_i:column id> <c_i_v:column val> ... <c_n:column id> <c_n_v:column val>
 
