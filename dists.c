@@ -1,14 +1,15 @@
 #include "dists.h"
 char * version = "v0.3";
-char * usage =  "\nUsage dists [options] < input-stream\n"
+char * usage =  "\nUsage: dists [options] < input-stream\n"
      "input-stream:<n:number of elements in the row> <c_i:column id> <c_i_v:column val> ... <c_n:column id> <c_n_v:column val>\n"
      "Options:\n"
-     "\t-h Display this information\n"
+     "\t-h \t\t\t\t Display this information\n"
      "\t-d <distance-type>\t\t Set <distance-type> 0 for Euclid, 1 for Cosine(default Cosine)\n"
-     "\t-u <upper-bound>\t\t calculate 1000NN of the rows up to the <upper-bound>(default number of rows)\n"
-     "\t-l <lower-bound>\t\t calculate 1000NN of the rows starting from <lower-bound>(default 0)\n"
-     "\t-p <arg>\t\t\t run <arg> parallel jobs to calculate kNN(default 1)\n"
-     "\t-k <arg>\t\t\t calculate <arg>NN of the data(default 1000)\n";
+     "\t-u <upper-bound>\t\t Calculate 1000NN of the rows up to the <upper-bound>(default number of rows)\n"
+     "\t-l <lower-bound>\t\t Calculate 1000NN of the rows starting from <lower-bound>(default 0)\n"
+     "\t-p <arg>\t\t\t Run <arg> parallel jobs to calculate kNN(default 1)\n"
+     "\t-k <arg>\t\t\t Calculate <arg>NN of the data(default 1000)\n"
+     "\t-v \t\t\t\t Verbose\n";
 
 int Up;
 int Low;
