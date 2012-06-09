@@ -17,7 +17,7 @@ Options:
 input-stream format
 <n:number of elements in the row> <c_i:column id> <c_i_v:column val> ... <c_n:column id> <c_n_v:column val>
 
-Algorithm: Calculates the cosine or Euclid distance between sparse
+Algorithm: Calculates 5 different distance "metric" between sparse
 input vectors and returns the top N nearest neighbors of each data
 instance.  The workload can be distributed to threads.
 
