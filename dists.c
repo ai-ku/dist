@@ -4,9 +4,9 @@ char * usage =  "\nUsage: dists [options] < input-stream\n"
      "input-stream:<n:number of elements in the row> <c_i:column id> <c_i_v:column val> ... <c_n:column id> <c_n_v:column val>\n"
      "Options:\n"
      "\t-h \t\t\tDisplay this information\n"
-     "\t-d <distance-type>\t(default Cosine). Set <distance-type> \n"
+     "\t-d <distance-type>\t. Set <distance-type> \n"
 "\t\t0 for Euclid\n"
-"\t\t1 for Cosine\n" 
+"\t\t1 for Cosine(default)\n" 
 "\t\t2 for Manhattan\n"
 "\t\t3 for Maximum\n"
 "\t\t4 for Jensen\n"
@@ -16,10 +16,8 @@ char * usage =  "\nUsage: dists [options] < input-stream\n"
      "\t-k <arg>\t\tCalculate <arg>NN of the data(default 1000)\n"
      "\t-v \t\t\tVerbose\n";
 
-/* TESTING
-Dtype is not tested.
-Manhattan code is not tested.
-
+/* NOT TESTED FUNCTIONS
+   none
 */
 
 int Up;
@@ -98,7 +96,7 @@ void read_sparse_binary_data_to_array(char * fname){
      /*Number of unique substitutes in all data*/
      SubstituteTypes += 1;
      fclose(infile);
-     msg("Data[%d x %d = %dBytes]\n",lr,SubstituteTypes, totalByte);
+     msg("Data[%d x %d = %dBytes]",lr,SubstituteTypes, totalByte);
 }
 
 void read_data_stdin(){
@@ -135,7 +133,7 @@ void read_data_stdin(){
                     else if(Dtype == cosine)
                          rr->norm += rr->val[pos] * rr->val[pos];
                     else if(Dtype == jensen)
-                         rr->lval[pos] = rr->val[pos] * (log2(rr->val[pos]) + 1);
+                         rr->lval[pos] = rr->val[pos] * log2(rr->val[pos]);
                     pos++;
                }
                iter++;
@@ -337,8 +335,9 @@ float dist_jensen_sparse(Row p, Row q){
      unsigned * pids = p->ids, *qids = q->ids;
      while(p_i < pnnz && q_i < qnnz){
           if (pids[p_i] == qids[q_i]){
-               float m = p->val[p_i] + q->val[q_i];
-               sum = p->lval[p_i] + q->lval[p_i] - m * log2(m);
+               float m = 0.5*(p->val[p_i] + q->val[q_i]);
+               float m2 = (p->val[p_i] + q->val[q_i]);
+               sum += p->lval[p_i] + q->lval[q_i] - (m2) *log2(m);
                p_i++;
                q_i++;            
           }
@@ -359,8 +358,8 @@ float dist_jensen_sparse(Row p, Row q){
           sum += q->val[q_i];
           q_i++;
      }
-     return sqrt(0.5 * sum);
-     
+     if(sum < 0) sum = 0;
+     return sqrt(0.5 * sum);     
 }
 
 int main (int argc, char * argv[]){
@@ -377,32 +376,32 @@ int main (int argc, char * argv[]){
                     opt_dist = atoi(optarg);
                     switch(opt_dist){
                          case euclid://euclidian
-                              msg("Sparse Euclid distance\n");
+                              msg("Sparse Euclid distance");
                               Dtype = euclid;
                               DistFunc = dist_euclid_sparse;
                               break;
                          case cosine://Cosine distance
-                              msg("Sparse Cosine distance\n");
+                              msg("Sparse Cosine distance");
                               Dtype = cosine;
                               DistFunc = dist_cosine_sparse;
                               break;
                          case manhattan://Manhattan distance
-                              msg("Sparse Manhattan distance\n");
+                              msg("Sparse Manhattan distance");
                               Dtype = manhattan;
                               DistFunc = dist_manhattan_sparse;
                               break;
                          case maximum://Maximum distance
-                              msg("Sparse Maximum  distance\n");
+                              msg("Sparse Maximum  distance");
                               Dtype = maximum;
                               DistFunc = dist_maximum_sparse;
                               break;
                          case jensen:
-                              msg("Sparse Jensen  distance\n");
+                              msg("Sparse Jensen  distance");
                               Dtype = jensen;
                               DistFunc = dist_jensen_sparse;
                               break;
                          default:
-                              g_error("Invalid Distance Option\n");
+                              g_error("Invalid Distance Option");
                     }
                     break;
                case 'k':
@@ -431,19 +430,19 @@ int main (int argc, char * argv[]){
                     g_error("%s",usage);
           }
      }
-     msg("File:%s Distance:%d Threads:%d Up:%d Low:%d KNN:%d\n", opt_file, opt_dist, ThreadCount, Up, Low, K);
+     msg("File:%s Distance:%d Threads:%d Up:%d Low:%d KNN:%d", opt_file, opt_dist, ThreadCount, Up, Low, K);
      if (argc <= 1 || DistFunc == NULL){
           g_error("%s",usage);
      }
      start = clock();
-     fprintf(stderr,"read sparse_binary\n");
+     fprintf(stderr,"read sparse_binary");
      if (opt_file != NULL)
           read_sparse_binary_data_to_array(opt_file);          
      else
           read_data_stdin();
      r = length(Data);
      if(r == 0 || Data == NULL){
-          g_error("Invalid input file\n");
+          g_error("Invalid input file");
      }
      if (Up == Low){
           Up = r;
@@ -456,14 +455,15 @@ int main (int argc, char * argv[]){
           Low = 0;
      }
      g_assert(Up > Low);
-     msg("time:%f\n",((float)clock() - start) / CLOCKS_PER_SEC);
-     msg("Allocating Heaps [%d * %dNN]\n",r , K);
+     K = K > r ? r : K;
+     msg("time:%f",((float)clock() - start) / CLOCKS_PER_SEC);     
+     msg("Allocating Heaps [%d * %dNN]",r , K);
      Dist = (Hnode**)malloc(r * sizeof(Hnode*));
      for(int i = Low; i < Up; i++){
           if(i % 10000 == 0 && VERBOSE) fprintf(stderr,".");
           Dist[i] = new_heap(K);
      }
-     msg("\nCalculate distances\n");
+     msg("Calculate distances");
      split_thread_work();
      foreach_int(i,Low,Up){
           printf("%d ",i);
