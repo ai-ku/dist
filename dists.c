@@ -338,20 +338,20 @@ float dist_jensen_sparse(Row p, Row q){
                q_i++;            
           }
           else if(pids[p_i] < qids[q_i]){
-               sum += pval[p_i];
+               sum += p->val[p_i];
                p_i++;
           }
           else{
-               sum += qval[q_i];
+               sum += q->val[q_i];
                q_i++;
           }
      }
      while(p_i < pnnz){
-          sum += pval[p_i];
+          sum += p->val[p_i];
           p_i++;
      }
      while(q_i < qnnz){
-          sum += qval[q_i];
+          sum += q->val[q_i];
           q_i++;
      }
      return sqrt(0.5 * sum);
@@ -390,6 +390,11 @@ int main (int argc, char * argv[]){
                               msg("Sparse Maximum  distance\n");
                               Dtype = maximum;
                               DistFunc = dist_maximum_sparse;
+                              break;
+                         case jensen:
+                              msg("Sparse Jensen  distance\n");
+                              Dtype = jensen;
+                              DistFunc = dist_jensen_sparse;
                               break;
                          default:
                               g_error("Invalid Distance Option\n");
