@@ -11,8 +11,6 @@
 #include "array.h"
 #include "heap.h"
 
-/*Externs*/
-extern int VERBOSE;
 /*typedefs*/
 typedef struct _Row{
      int nnz;
@@ -40,7 +38,7 @@ typedef struct WorkS{
 
 /*Function Declerations*/
 void init_dist();
-void read_sparse_binary_data_to_array(char * fname, int type);
+void read_sparse_binary_data_to_array(char * fname);
 void * dist_sparse_thread(void * ptr);
 float dist_euclid_sparse(Row p, Row q);
 float dist_cosine_sparse(Row p, Row q);

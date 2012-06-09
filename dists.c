@@ -4,12 +4,18 @@ char * usage =  "\nUsage: dists [options] < input-stream\n"
      "input-stream:<n:number of elements in the row> <c_i:column id> <c_i_v:column val> ... <c_n:column id> <c_n_v:column val>\n"
      "Options:\n"
      "\t-h \t\t\t\t Display this information\n"
-     "\t-d <distance-type>\t\t Set <distance-type> 0 for Euclid, 1 for Cosine(default Cosine)\n"
+     "\t-d <distance-type>\t\t Set <distance-type> 0 for Euclid, 1 for Cosine(default Cosine), 2 for manhattan\n"
      "\t-u <upper-bound>\t\t Calculate 1000NN of the rows up to the <upper-bound>(default number of rows)\n"
      "\t-l <lower-bound>\t\t Calculate 1000NN of the rows starting from <lower-bound>(default 0)\n"
      "\t-p <arg>\t\t\t Run <arg> parallel jobs to calculate kNN(default 1)\n"
      "\t-k <arg>\t\t\t Calculate <arg>NN of the data(default 1000)\n"
      "\t-v \t\t\t\t Verbose\n";
+
+/* TESTING
+Dtype is not tested.
+Manhattan code is not tested.
+
+*/
 
 int Up;
 int Low;
@@ -20,6 +26,13 @@ float (* DistFunc)(Row, Row);
 Array Data;
 Hnode ** Dist;
 int VERBOSE;
+enum DTYPE {
+     euclid = 0,
+     cosine = 1,
+     manhattan = 2,
+     maximum = 3,
+     jensen = 4
+} Dtype;
 
 void init_dist(){
      Data = NULL;
@@ -32,7 +45,7 @@ void init_dist(){
      VERBOSE = 0;
 }
                              
-void read_sparse_binary_data_to_array(char * fname, int type){
+void read_sparse_binary_data_to_array(char * fname){
      FILE * infile;     
      unsigned lr,c, totalByte = 0;
      if(!(infile = fopen(fname, "r"))){
@@ -50,7 +63,7 @@ void read_sparse_binary_data_to_array(char * fname, int type){
           totalByte += sizeof(char) * 4 * 2 * c;
           rr->ids = (unsigned*) malloc(4 *c * sizeof(char));
           rr->val = (float *) malloc(4 *c * sizeof(char));
-          if(type != 1)/*Only allocate if the distance metric is euclid*/               
+          if(Dtype == euclid)/*Only allocate if the distance metric is euclid*/               
                rr->lval = (float *) malloc(4 *c * sizeof(char));
           fread(rr->ids, 4 * sizeof(char), c, infile);
           fread(rr->val, 4 * sizeof(char), c, infile);
@@ -58,11 +71,11 @@ void read_sparse_binary_data_to_array(char * fname, int type){
           foreach_int(jj,0,rr->nnz){
                /* This part improves the performance of by pre-calculation */
                if (rr->ids[jj] > SubstituteTypes) SubstituteTypes = rr->ids[jj];
-               switch(type){
-                    case 0://euclid-precalculation                         
+               switch(Dtype){
+                    case cosine://euclid-precalculation                         
                          rr->lval[jj] = rr->val[jj] * rr->val[jj];
                          break;
-                    case 1://cosine-precalculation
+                    case euclid://cosine-precalculation
                          rr->norm += rr->val[jj] * rr->val[jj];
                          break;
                     default:
@@ -70,7 +83,7 @@ void read_sparse_binary_data_to_array(char * fname, int type){
                }
           }
           rr->norm = sqrt(rr->norm);
-          if (type == 1){
+          if (Dtype == cosine){
                /*Cosine L2Normalizing the vector*/
                foreach_int(jj,0,rr->nnz){
                     rr->val[jj] = rr->val[jj] / rr->norm;
@@ -98,7 +111,11 @@ void read_data_stdin(){
                     rr->norm = 0;
                     rr->ids = (unsigned*) calloc(nnz, sizeof(float));
                     rr->val = (float *) calloc(nnz, sizeof(float));
-                    rr->lval = (float *) calloc(nnz, sizeof(float));
+                    if(Dtype == euclid)
+                         rr->lval = (float *) calloc(nnz, sizeof(float));
+                    else if(Dtype == jensen)
+                         rr->lval = (float *) calloc(nnz, sizeof(float));
+                    else rr->lval = NULL;
                     push(Data,rr);
                     continue;
                }
@@ -108,15 +125,21 @@ void read_data_stdin(){
                }
                else if(iter %2 == 1){
                     rr->val[pos] = atof(word);
-                    rr->lval[pos] = rr->val[pos] * rr->val[pos];
-                    rr->norm += rr->val[pos] * rr->val[pos];
+                    if(Dtype == euclid)
+                         rr->lval[pos] = rr->val[pos] * rr->val[pos];
+                    else if(Dtype == cosine)
+                         rr->norm += rr->val[pos] * rr->val[pos];
+                    else if(Dtype == jensen)
+                         rr->lval[pos] = rr->val[pos] * (log2(rr->val[pos]) + 1);
                     pos++;
                }
                iter++;
           }
-          rr->norm = sqrt(rr->norm);
-          foreach_int(i,0,nnz){
-               rr->val[i] /= rr->norm;
+          if(Dtype == cosine){
+               rr->norm = sqrt(rr->norm);
+               foreach_int(i,0,nnz){
+                    rr->val[i] /= rr->norm;
+               }
           }
      }
      SubstituteTypes += 1;
@@ -159,7 +182,6 @@ void * dist_sparse_thread(void * ptr){
      Work w = (Work) ptr;
      info(w);
      Hnode n;
-     float best = INT_MAX;
      clock_t start = clock();
      foreach_int(i, str(w), end(w)){
           Row r_i = aref(Data,i);
@@ -178,7 +200,6 @@ void * dist_sparse_thread(void * ptr){
                     Dist[i][1] = n;
                     max_heapify(Dist[i],1);
                }
-               best = heap_best(Dist[i]);
           }
           heap_sort(Dist[i]);
      }      
@@ -242,26 +263,133 @@ float dist_cosine_sparse(Row p, Row q){
      return acos(sum) * M_1_PI;
 }
 
+float dist_manhattan_sparse(Row p, Row q){
+     double sum = 0;
+     int p_i = 0, q_i = 0, pnnz = p->nnz, qnnz = q->nnz;
+     unsigned * pids = p->ids, *qids = q->ids;
+     float * pval = p->val, *qval = q->val;
+     while(p_i < pnnz && q_i < qnnz){
+          if(pids[p_i] == qids[q_i]){
+               sum += fabs(pval[p_i] - qval[q_i]);
+               p_i++;
+               q_i++;
+          }
+          else if(pids[p_i] < qids[q_i]){
+               sum += fabs(pval[p_i]);
+               p_i++;
+          }
+          else{
+               sum += fabs(qval[q_i]);
+               q_i++;
+          }
+     }
+    while(p_i < pnnz){
+         sum += fabs(p->val[p_i]);
+         p_i++;
+    }
+    while(q_i < qnnz){
+         sum += fabs(q->val[q_i]);
+         q_i++;
+    }
+    return sum;
+}
+
+float dist_maximum_sparse(Row p, Row q){
+     double max_diff = 0;
+     int p_i = 0, q_i = 0, pnnz = p->nnz, qnnz = q->nnz;
+     unsigned * pids = p->ids, *qids = q->ids;
+     float * pval = p->val, *qval = q->val;
+     while(p_i < pnnz && q_i < qnnz){
+          if(pids[p_i] == qids[q_i]){
+               double d = fabs(pval[p_i] - qval[q_i]);
+               max_diff = d > max_diff ? d : max_diff;
+               p_i++;
+               q_i++;
+          }
+          else if(pids[p_i] < qids[q_i]){
+               max_diff = fabs(pval[p_i]) > max_diff ? fabs(pval[p_i]) : max_diff;
+               p_i++;
+          }
+          else{
+               max_diff = fabs(qval[q_i]) > max_diff ? fabs(qval[q_i]) : max_diff;
+               q_i++;
+          }
+     }
+    while(p_i < pnnz){
+         max_diff = fabs(pval[p_i]) > max_diff ? fabs(pval[p_i]) : max_diff;
+         p_i++;
+    }
+    while(q_i < qnnz){
+         max_diff = fabs(qval[q_i]) > max_diff ? fabs(qval[q_i]) : max_diff;
+         q_i++;
+    }
+    return max_diff;
+}
+
+float dist_jensen_sparse(Row p, Row q){
+     double sum = 0; 
+     int p_i = 0, q_i = 0, pnnz = p->nnz, qnnz = q->nnz;
+     unsigned * pids = p->ids, *qids = q->ids;
+     while(p_i < pnnz && q_i < qnnz){
+          if (pids[p_i] == qids[q_i]){
+               float m = p->val[p_i] + q->val[q_i];
+               sum = p->lval[p_i] + q->lval[p_i] - m * log2(m);
+               p_i++;
+               q_i++;            
+          }
+          else if(pids[p_i] < qids[q_i]){
+               sum += pval[p_i];
+               p_i++;
+          }
+          else{
+               sum += qval[q_i];
+               q_i++;
+          }
+     }
+     while(p_i < pnnz){
+          sum += pval[p_i];
+          p_i++;
+     }
+     while(q_i < qnnz){
+          sum += qval[q_i];
+          q_i++;
+     }
+     return sqrt(0.5 * sum);
+     
+}
+
 int main (int argc, char * argv[]){
      init_dist();
      clock_t start;
      int r = -1;
      /*Options of program*/
      int opt;
-     int opt_dist = 0;
+     enum DTYPE opt_dist = 0;
      char *opt_file = NULL;
      while ((opt = getopt(argc, argv, "d:f:u:l:p:k:hv")) != -1) {
           switch(opt) {
                case 'd':
                     opt_dist = atoi(optarg);
                     switch(opt_dist){
-                         case 0://euclidian
+                         case euclid://euclidian
                               msg("Sparse Euclid distance\n");
+                              Dtype = euclid;
                               DistFunc = dist_euclid_sparse;
                               break;
-                         case 1://Cosine distance
+                         case cosine://Cosine distance
                               msg("Sparse Cosine distance\n");
+                              Dtype = cosine;
                               DistFunc = dist_cosine_sparse;
+                              break;
+                         case manhattan://Manhattan distance
+                              msg("Sparse Manhattan distance\n");
+                              Dtype = manhattan;
+                              DistFunc = dist_manhattan_sparse;
+                              break;
+                         case maximum://Maximum distance
+                              msg("Sparse Maximum  distance\n");
+                              Dtype = maximum;
+                              DistFunc = dist_maximum_sparse;
                               break;
                          default:
                               g_error("Invalid Distance Option\n");
@@ -283,23 +411,23 @@ int main (int argc, char * argv[]){
                     ThreadCount = atoi(optarg) >= 1 ? atoi(optarg) : 1;
                     break;
                case 'h':
-                    fprintf(stderr,usage);
+                    fprintf(stderr,"%s",usage);
                     exit(-1);
                case 'v':
                     VERBOSE = 1;
                     break;
                default:
                     g_warning("Invalid option:%s\n",optarg);
-                    g_error(usage);
+                    g_error("%s",usage);
           }
      }
      msg("File:%s Distance:%d Threads:%d Up:%d Low:%d KNN:%d\n", opt_file, opt_dist, ThreadCount, Up, Low, K);
      if (argc <= 1 || DistFunc == NULL)
-          g_error(usage);
+          g_error("%s",usage);
      start = clock();
      fprintf(stderr,"read sparse_binary\n");
      if (opt_file != NULL)
-          read_sparse_binary_data_to_array(opt_file, opt_dist);          
+          read_sparse_binary_data_to_array(opt_file);          
      else
           read_data_stdin();
      r = length(Data);
