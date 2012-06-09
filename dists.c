@@ -1,5 +1,5 @@
 #include "dists.h"
-char * version = "v0.3";
+char * version = "v0.9";
 char * usage =  "\nUsage: dists [options] < input-stream\n"
      "input-stream:<n:number of elements in the row> <c_i:column id> <c_i_v:column val> ... <c_n:column id> <c_n_v:column val>\n"
      "Options:\n"
@@ -17,7 +17,7 @@ char * usage =  "\nUsage: dists [options] < input-stream\n"
      "\t-v \t\t\tVerbose\n";
 
 /* NOT TESTED FUNCTIONS
-   none
+   
 */
 
 int Up;
