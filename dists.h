@@ -39,9 +39,13 @@ typedef struct WorkS{
 /*Function Declerations*/
 void init_dist();
 void read_sparse_binary_data_to_array(char * fname);
+void read_data_stdin();
+void split_thread_work();
 void * dist_sparse_thread(void * ptr);
 float dist_euclid_sparse(Row p, Row q);
 float dist_cosine_sparse(Row p, Row q);
-void split_thread_work();
+float dist_manhattan_sparse(Row p, Row q);
+float dist_maximum_sparse(Row p, Row q);
+float dist_jensen_sparse(Row p, Row q);
 
 #endif
