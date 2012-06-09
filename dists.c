@@ -3,13 +3,18 @@ char * version = "v0.3";
 char * usage =  "\nUsage: dists [options] < input-stream\n"
      "input-stream:<n:number of elements in the row> <c_i:column id> <c_i_v:column val> ... <c_n:column id> <c_n_v:column val>\n"
      "Options:\n"
-     "\t-h \t\t\t\t Display this information\n"
-     "\t-d <distance-type>\t\t Set <distance-type> 0 for Euclid, 1 for Cosine(default Cosine), 2 for manhattan\n"
-     "\t-u <upper-bound>\t\t Calculate 1000NN of the rows up to the <upper-bound>(default number of rows)\n"
-     "\t-l <lower-bound>\t\t Calculate 1000NN of the rows starting from <lower-bound>(default 0)\n"
-     "\t-p <arg>\t\t\t Run <arg> parallel jobs to calculate kNN(default 1)\n"
-     "\t-k <arg>\t\t\t Calculate <arg>NN of the data(default 1000)\n"
-     "\t-v \t\t\t\t Verbose\n";
+     "\t-h \t\t\tDisplay this information\n"
+     "\t-d <distance-type>\t(default Cosine). Set <distance-type> \n"
+"\t\t0 for Euclid\n"
+"\t\t1 for Cosine\n" 
+"\t\t2 for Manhattan\n"
+"\t\t3 for Maximum\n"
+"\t\t4 for Jensen\n"
+     "\t-u <upper-bound>\tCalculate 1000NN of the rows up to the <upper-bound>(default number of rows)\n"
+     "\t-l <lower-bound>\tCalculate 1000NN of the rows starting from <lower-bound>(default 0)\n"
+     "\t-p <arg>\t\tRun <arg> parallel jobs to calculate kNN(default 1)\n"
+     "\t-k <arg>\t\tCalculate <arg>NN of the data(default 1000)\n"
+     "\t-v \t\t\tVerbose\n";
 
 /* TESTING
 Dtype is not tested.
@@ -417,7 +422,7 @@ int main (int argc, char * argv[]){
                     break;
                case 'h':
                     fprintf(stderr,"%s",usage);
-                    exit(-1);
+                    exit(0);
                case 'v':
                     VERBOSE = 1;
                     break;
@@ -427,8 +432,9 @@ int main (int argc, char * argv[]){
           }
      }
      msg("File:%s Distance:%d Threads:%d Up:%d Low:%d KNN:%d\n", opt_file, opt_dist, ThreadCount, Up, Low, K);
-     if (argc <= 1 || DistFunc == NULL)
+     if (argc <= 1 || DistFunc == NULL){
           g_error("%s",usage);
+     }
      start = clock();
      fprintf(stderr,"read sparse_binary\n");
      if (opt_file != NULL)
