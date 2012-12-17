@@ -35,7 +35,7 @@ void max_heapify(Heap h, unsigned int idx){
 }
 
 void heap_increase_key(Heap h, unsigned int idx, Hnode value){
-     g_assert(value.val  >= h[idx].val);
+     g_assert(value.val  > h[idx].val);
      h[idx] = value;
      while(idx > 1 && h[parent_node(idx)].val < h[idx].val){
           Hnode temp;

@@ -34,6 +34,7 @@ typedef struct WorkS{
 #define info(w) g_assert((w)!= NULL);if(VERBOSE)fprintf(stderr,"[Work[%d] str:%d end:%d]\n", (w)->id, (w)->str_r, (w)->end_r)
 /*Constants*/
 #define EPS 0
+#define LOG_ZERO -99999999
 
 /*Function Declerations*/
 void init_dist();

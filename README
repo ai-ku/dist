@@ -14,7 +14,7 @@ Options:
    -p <arg>	Run <arg> parallel jobs to calculate kNN(default 1)
    -k <arg>	Calculate <arg>NN of the data(default 1000)
    -v 		Verbose
-input-stream format
+input-stream format sorted according to column ids (c_i)
 <n:number of elements in the row> <c_i:column id> <c_i_v:column val> ... <c_n:column id> <c_n_v:column val>
 
 Algorithm: Calculates 5 different distance "metric" between sparse
